@@ -11,20 +11,20 @@ pub struct Fraction {
 
 impl Fraction {
     /// Equivalent to `(+) u64::MAX / 1`.
-    pub const MAX: Fraction = Fraction {
+    pub const POS_MAX: Fraction = Fraction {
         neg_sign: false, numerator: u64::MAX, denominator: 1
     };
     /// Equivalent to `(+) 1 / u64::MAX`.
-    pub const MIN_POSITIVE: Fraction = Fraction {
+    pub const POS_MIN: Fraction = Fraction {
         neg_sign: false, numerator: 1, denominator: u64::MAX
     };
     /// Equivalent to `(-) u64::MAX / 1`.
-    pub const MAX_NEGATIVE: Fraction = Fraction {
+    pub const NEG_MAX: Fraction = Fraction {
         neg_sign: true, numerator: u64::MAX, denominator: 1
     };
     /// Equivalent to `(-) 1 / u64::MAX`
     /// or `-1 / u64::MAX`.
-    pub const MIN_NEGATIVE: Fraction = Fraction {
+    pub const NEG_MIN: Fraction = Fraction {
         neg_sign: true, numerator: 1, denominator: u64::MAX
     };
     /// Defined as `(+) 0 / 0`.
@@ -191,8 +191,8 @@ impl Fraction {
     /// Finite values remain untouched.
     pub fn cap_to_finite(self) -> Self {
         match self {
-            Fraction::INFINITY => Fraction::MAX,
-            Fraction::NEG_INFINITY => Fraction::MAX_NEGATIVE,
+            Fraction::INFINITY => Fraction::POS_MAX,
+            Fraction::NEG_INFINITY => Fraction::NEG_MAX,
             Fraction::UNDEFINED => Fraction::ZERO,
             _ => self
         }
@@ -242,13 +242,13 @@ mod tests {
 
     #[test]
     fn identities() {
-        assert_eq!(Fraction::MAX, Fraction::MIN_POSITIVE.reciprocal());
-        assert_eq!(Fraction::MAX_NEGATIVE, Fraction::MIN_NEGATIVE.reciprocal());
+        assert_eq!(Fraction::POS_MAX, Fraction::POS_MIN.reciprocal());
+        assert_eq!(Fraction::NEG_MAX, Fraction::NEG_MIN.reciprocal());
         assert_eq!(Fraction::INFINITY, Fraction::NEG_INFINITY.negated());
         assert_eq!(Fraction::ZERO, Fraction::from(false, 0, 1000).simplifed());
         assert_eq!(Fraction::UNDEFINED, Fraction::from(true, 0, 0).simplifed());
         assert_eq!(
-            (Fraction::MAX * Fraction::MIN_POSITIVE).simplifed(),
+            (Fraction::POS_MAX * Fraction::POS_MIN).simplifed(),
             Fraction::ONE
         );
     }
@@ -263,7 +263,7 @@ mod tests {
 
     #[test]
     fn capping() {
-        assert_eq!(Fraction::INFINITY.cap_to_finite(), Fraction::MAX);
-        assert_eq!(Fraction::MAX.cap_to_finite(), Fraction::MAX);
+        assert_eq!(Fraction::INFINITY.cap_to_finite(), Fraction::POS_MAX);
+        assert_eq!(Fraction::POS_MAX.cap_to_finite(), Fraction::POS_MAX);
     }
 }
