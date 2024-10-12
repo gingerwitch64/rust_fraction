@@ -24,7 +24,7 @@ impl Fraction {
     };
     /// Equivalent to `(-) 1 / u64::MAX`
     /// or `-1 / u64::MAX`.
-    pub const MIN: Fraction = Fraction {
+    pub const MIN_NEGATIVE: Fraction = Fraction {
         neg_sign: true, numerator: 1, denominator: u64::MAX
     };
     /// Defined as `(+) 0 / 0`.
@@ -243,7 +243,7 @@ mod tests {
     #[test]
     fn identities() {
         assert_eq!(Fraction::MAX, Fraction::MIN_POSITIVE.reciprocal());
-        assert_eq!(Fraction::MAX_NEGATIVE, Fraction::MIN.reciprocal());
+        assert_eq!(Fraction::MAX_NEGATIVE, Fraction::MIN_NEGATIVE.reciprocal());
         assert_eq!(Fraction::INFINITY, Fraction::NEG_INFINITY.negated());
         assert_eq!(Fraction::ZERO, Fraction::from(false, 0, 1000).simplifed());
         assert_eq!(Fraction::UNDEFINED, Fraction::from(true, 0, 0).simplifed());
