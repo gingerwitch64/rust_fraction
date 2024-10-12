@@ -58,8 +58,10 @@ impl Fraction {
         neg_sign: true, numerator: 1, denominator: 1
     };
 
+    /// Returns `Fraction::ONE`.
     pub fn new() -> Self { Fraction::ONE }
 
+    /// Returns a new fraction from a `bool` sign and two `u64`s.
     pub fn from(neg_sign: bool, numerator: u64, denominator: u64) -> Self {
         Fraction {
             neg_sign,
@@ -68,8 +70,10 @@ impl Fraction {
         }
     }
 
+    /// Mutates a fraction's `neg_sign`.
     pub fn negate(&mut self) { self.neg_sign = !self.neg_sign }
 
+    /// Returns a negated version of the fraction.
     pub fn negated(self) -> Self {
         Fraction::from(
             !self.neg_sign,
@@ -78,16 +82,29 @@ impl Fraction {
         )
     }
 
+    /// Returns a fraction with a swapped `numerator` and `denominator`.
     pub fn reciprocal(self) -> Self {
         Fraction::from(self.neg_sign, self.denominator, self.numerator)
     }
 
+    /// NOT RECCOMENDED: USE `Fraction::simplified()` INSTEAD
+    /// 
+    /// This function does not support/will behave unusually
+    /// with any fractions containing a value of `0`.
+    /// 
+    /// Mutates a fraction into a proportionate one.
     pub fn simplify(&mut self) {
         let common_divisor = self.numerator.gcd(self.denominator);
         self.numerator /= common_divisor;
         self.denominator /= common_divisor;
     }
 
+    /// Returns a simplified version of the fraction.
+    /// 
+    /// Fractions with denominators of `0` will be simplified to
+    /// `Fraction::NEG_INFINITY` or `Fraction::INFINITY` based on
+    /// their negation sign, and either variant of `0/0` will be
+    /// simplified to `Fraction::UNDEFINED`.
     pub fn simplifed(self) -> Self {
         if self.numerator == 0 && self.denominator != 0 {
             return Fraction::ZERO;
@@ -115,6 +132,7 @@ impl Fraction {
         )
     }
 
+    /// Potentially lossily converts a fraction into a 64 bit floating point.
     pub fn as_f64(self) -> f64 {
         let negate = match self.neg_sign {
             true => -1.0,
@@ -127,6 +145,21 @@ impl Fraction {
         }
     }
 
+    /// Attempts to convert a floating point into a fraction via rough
+    /// calculations.
+    /// 
+    /// The function works by taking the floating point, multiplying it by
+    /// 10<sup>15</sup>, and plugging it into a Fraction with the new floating
+    /// point for the numerator and the power of ten in the denominator.
+    /// 
+    /// # This function is \[technically\] unsafe!
+    /// To convert from f64 to u64, this function uses
+    /// `f64::to_int_unchecked::<u64>()` ; however, `from_64()` is programmed
+    /// to check for values that would cause this operation to fail beforehand.
+    /// 
+    /// _Nola's Note:
+    /// In testing on `x86_64-unknown-linux-gnu`, this works quite well and
+    /// preserves \[the aforementioned\] 15 points of decimal precision._
     pub fn from_f64(fp: f64) -> Self {
         if !fp.is_finite() {
             return match fp {
@@ -153,6 +186,9 @@ impl Fraction {
         }
     }
     
+    /// Clamps infinite values to extreme, but absolute Fractions.
+    /// 
+    /// Finite values remain untouched.
     pub fn cap_to_finite(self) -> Self {
         match self {
             Fraction::INFINITY => Fraction::MAX,
@@ -164,7 +200,6 @@ impl Fraction {
 }
 
 impl ops::Mul for Fraction {
-    // The multiplication of rational numbers is a closed operation.
     type Output = Self;
 
     fn mul(self, rhs: Self) -> Self {
@@ -176,7 +211,6 @@ impl ops::Mul for Fraction {
 }
 
 impl ops::Div for Fraction {
-    // The multiplication of rational numbers is a closed operation.
     type Output = Self;
 
     fn div(self, rhs: Self) -> Self {
