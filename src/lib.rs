@@ -156,7 +156,7 @@ impl Fraction {
     pub fn cap_to_finite(self) -> Self {
         match self {
             Fraction::INFINITY => Fraction::MAX,
-            Fraction::NEG_INFINITY => Fraction::MIN,
+            Fraction::NEG_INFINITY => Fraction::MAX_NEGATIVE,
             Fraction::UNDEFINED => Fraction::ZERO,
             _ => self
         }
