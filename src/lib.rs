@@ -84,6 +84,18 @@ impl Fraction {
         numerator: 884279719003555,
         denominator: 281474976710656,
     };
+    /// A selector for an IEEE 754 compliant f64's fraction.
+    /// 
+    /// Equivalent to `0x000FFFFFFFFFFFFF`.
+    const IEEE_754_DOUBLE_FRACTION: u64 = 0x000FFFFFFFFFFFFF;
+    /// A selector for an IEEE 754 compliant f64's exponent.
+    /// 
+    /// Equivalent to `0x7FF0000000000000`.
+    const IEEE_754_DOUBLE_EXPONENT: u64 = 0x7FF0000000000000;
+    /// A selector for an IEEE 754 compliant f64's sign bit.
+    /// 
+    /// Equivalent to `0x8000000000000000`.
+    const IEEE_754_DOUBLE_SIGN_BIT: u64 = 0x8000000000000000;
 
     /// Returns `Fraction::ONE`.
     pub fn new() -> Self {
@@ -199,21 +211,14 @@ impl Fraction {
 
         let two_pow_52: u64 = 0x10000000000000;
         let float: f64 = fp;
-        let float_as_bits = float.to_bits().to_le();
-        let ieee_754_fraction: u64 = 0x000FFFFFFFFFFFFF;
-        let ieee_754_exponent: u64 = 0x7FF0000000000000;
-        let ieee_754_sign: u64 = 0x8000000000000000;
+        let float_as_bits: u64 = float.to_bits().to_le();
+
         let inv_two_pow_52: Fraction = Fraction::from(false, 0x1, two_pow_52);
 
-        assert_eq!(
-            ieee_754_exponent ^ ieee_754_fraction ^ ieee_754_sign,
-            0xFFFFFFFFFFFFFFFF
-        );
+        let sign: bool = Fraction::IEEE_754_DOUBLE_SIGN_BIT & float_as_bits == Fraction::IEEE_754_DOUBLE_SIGN_BIT;
+        let fraction: u64 = Fraction::IEEE_754_DOUBLE_FRACTION & float_as_bits;
 
-        let sign: bool = ieee_754_sign & float_as_bits == ieee_754_sign;
-        let fraction: u64 = ieee_754_fraction & float_as_bits;
-
-        let le_exponent = (float_as_bits & ieee_754_exponent).to_le() >> 52;
+        let le_exponent: u64 = (float_as_bits & Fraction::IEEE_754_DOUBLE_EXPONENT).to_le() >> 52;
         let halved_exponent_bytes = le_exponent
             .to_le_bytes()
             .split_at(8 / 2)
@@ -345,6 +350,20 @@ mod tests {
         assert!(
             (Fraction::from_f64(0.3333333333333333) + Fraction::from(true, 1, 3)).as_f64()
             < 1e10
+        );
+    }
+
+    #[test]
+    fn ieee_consts() {
+        assert_eq!(
+            0xFFFFFFFFFFFFFFFFu64,
+            u64::MAX
+        );
+        assert_eq!(
+            Fraction::IEEE_754_DOUBLE_SIGN_BIT ^
+            Fraction::IEEE_754_DOUBLE_EXPONENT ^
+            Fraction::IEEE_754_DOUBLE_FRACTION,
+            u64::MAX
         );
     }
 
