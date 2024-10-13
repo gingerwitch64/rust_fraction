@@ -67,7 +67,7 @@ impl Fraction {
             neg_sign,
             numerator,
             denominator,
-        }
+        }.simplifed()
     }
 
     /// Mutates a fraction's `neg_sign`.
@@ -141,6 +141,7 @@ impl Fraction {
 
         match self.denominator {
             0 => f64::NAN,
+            1 => negate * self.numerator as f64,
             _ => negate * self.numerator as f64 / self.denominator as f64,
         }
     }
@@ -199,6 +200,25 @@ impl Fraction {
     }
 }
 
+fn lcm(a: u64, b: u64) -> u64 { a * b / a.gcd(b) }
+
+impl ops::Add for Fraction {
+    type Output = Self;
+
+    fn add(self, rhs: Self) -> Self {
+        let lcm = lcm(self.denominator, rhs.denominator);
+        let lhs_num = self.numerator * rhs.denominator;
+        let rhs_num = rhs.numerator * self.denominator;
+        let neg_sign: bool = rhs.neg_sign ^ (lhs_num > rhs_num);
+        let numerator: u64 = match self.neg_sign ^ rhs.neg_sign {
+            true => lhs_num.abs_diff(rhs_num),
+            false => lhs_num + rhs_num
+        };
+        let denominator: u64 = lcm;
+        Self::from(neg_sign, numerator, denominator).simplifed()
+    }
+}
+
 impl ops::Mul for Fraction {
     type Output = Self;
 
@@ -206,7 +226,7 @@ impl ops::Mul for Fraction {
         let neg_sign = self.neg_sign ^ rhs.neg_sign;
         let numerator = self.numerator * rhs.numerator;
         let denominator = self.denominator * rhs.denominator;
-        Self::from(neg_sign, numerator, denominator)
+        Self::from(neg_sign, numerator, denominator).simplifed()
     }
 }
 
@@ -217,7 +237,7 @@ impl ops::Div for Fraction {
         let neg_sign = self.neg_sign ^ rhs.neg_sign;
         let numerator = self.numerator * rhs.denominator;
         let denominator = self.denominator * rhs.numerator;
-        Self::from(neg_sign, numerator, denominator)
+        Self::from(neg_sign, numerator, denominator).simplifed()
     }
 }
 
