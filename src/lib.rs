@@ -65,6 +65,12 @@ impl Fraction {
         numerator: 0,
         denominator: 1,
     };
+    /// Defined as `(-) 0 / 1`.
+    pub const NEG_ZERO: Fraction = Fraction {
+        neg_sign: true,
+        numerator: 0,
+        denominator: 1,
+    };
     /// Defined as `(+) 1 / 1`.
     pub const ONE: Fraction = Fraction {
         neg_sign: false,
@@ -94,7 +100,7 @@ impl Fraction {
     const IEEE_754_DOUBLE_EXPONENT: u64 = 0x7FF0000000000000;
     /// A selector for an IEEE 754 compliant f64's sign bit.
     /// 
-    /// Equivalent to `0x8000000000000000`.
+    /// Equivalent to `0x8000000000000000` and `f64::to_bits(-0.0).to_le()`.
     const IEEE_754_DOUBLE_SIGN_BIT: u64 = 0x8000000000000000;
 
     /// Returns `Fraction::ONE`.
@@ -198,56 +204,37 @@ impl Fraction {
     /// _Nola's Note:
     /// Only tested thus far on Little Endian hardware._
     pub fn from_f64(fp: f64) -> Self {
-        if !fp.is_finite() {
-            return match fp {
-                f64::INFINITY => Fraction::INFINITY,
-                f64::NEG_INFINITY => Fraction::NEG_INFINITY,
-                _ => Fraction::UNDEFINED,
-            };
-        }
-        if fp.abs() == 0.0f64 {
-            return Fraction::ZERO;
+        match fp {
+            f64::INFINITY => return Fraction::INFINITY,
+            f64::NEG_INFINITY => return Fraction::NEG_INFINITY,
+            _ => {},
         }
 
-        let two_pow_52: u64 = 0x10000000000000;
-        let float: f64 = fp;
-        let float_as_bits: u64 = float.to_bits().to_le();
-
-        let inv_two_pow_52: Fraction = Fraction::from(false, 0x1, two_pow_52);
+        let float_as_bits: u64 = fp.to_bits().to_le();
+        match float_as_bits {
+            Fraction::IEEE_754_DOUBLE_SIGN_BIT => return Fraction::NEG_ZERO,
+            0 => return Fraction::ZERO,
+            _ => {},
+        }
 
         let sign: bool = Fraction::IEEE_754_DOUBLE_SIGN_BIT & float_as_bits == Fraction::IEEE_754_DOUBLE_SIGN_BIT;
         let fraction: u64 = Fraction::IEEE_754_DOUBLE_FRACTION & float_as_bits;
 
-        let le_exponent: u64 = (float_as_bits & Fraction::IEEE_754_DOUBLE_EXPONENT).to_le() >> 52;
-        let halved_exponent_bytes = le_exponent
-            .to_le_bytes()
-            .split_at(8 / 2)
-            .0
-            .iter()
-            .map(|&x| x)
-            .collect::<Vec<u8>>();
-        let signed_exponent: i16 =
-            i16::from_le_bytes([halved_exponent_bytes[0], halved_exponent_bytes[1]]);
-        let final_exponent: i16 = match signed_exponent {
-            0x7FF => panic!("Infinite/NAN Value Requested"),
-            0 => -1022,
-            _ => signed_exponent - 1023,
-        };
-        let two_power_biased_exp: u64 = 2u64.pow(final_exponent.abs().try_into().unwrap());
-        let frac_twopow: Fraction = match final_exponent.is_negative() {
-            true => Fraction::from(false, 1, two_power_biased_exp),
-            false => Fraction::from(false, two_power_biased_exp, 1),
-        };
-        let frac_fraction: Fraction = match signed_exponent {
-            0 => Fraction::from(false, fraction, 1),
-            _ => Fraction::from(false, two_pow_52 | fraction, 1),
-        };
-        let negator: Fraction = match sign {
-            true => Fraction::NEG_ONE,
-            false => Fraction::ONE,
-        };
-        let final_frac: Fraction = negator * frac_twopow * frac_fraction * inv_two_pow_52;
-        final_frac.simplified()
+        let le_exponent: u64 = (float_as_bits & Fraction::IEEE_754_DOUBLE_EXPONENT).to_le() >> Fraction::IEEE_754_DOUBLE_FRACTION.count_ones();
+        let halved_exponent_bytes: Vec<u8> = le_exponent
+            .to_le_bytes() // convert to an array of `u8`s
+            .split_at(8 / 2) // split the array in half
+            .0 // take the first array
+            .iter() // iterate over it
+            .map(|&x| x) // mapping the borrowed u8s to owned u8s
+            .collect(); // put them into the final Vector
+
+        // because the exponent is 11 bits, we only need two bytes to
+        // contain it, and storing it as an i16 allows for various type
+        // conversions and negative representations
+        let exponent: i16 = i16::from_le_bytes([halved_exponent_bytes[0], halved_exponent_bytes[1]]);
+
+        Fraction::UNDEFINED
     }
 
     /// Clamps infinite values to extreme, but absolute Fractions.
