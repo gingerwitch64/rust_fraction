@@ -146,21 +146,15 @@ impl Fraction {
         }
     }
 
-    /// Attempts to convert a floating point into a fraction via rough
-    /// calculations.
+    /// Losslessly converts a floating point to a `Fraction`.
     /// 
-    /// The function works by taking the floating point, multiplying it by
-    /// 10<sup>15</sup>, and plugging it into a Fraction with the new floating
-    /// point for the numerator and the power of ten in the denominator.
-    /// 
-    /// # This function is \[technically\] unsafe!
-    /// To convert from f64 to u64, this function uses
-    /// `f64::to_int_unchecked::<u64>()` ; however, `from_64()` is programmed
-    /// to check for values that would cause this operation to fail beforehand.
+    /// This function uses the IEEE 754 double precision floating
+    /// point standard to extract the sign, exponent and fraction from
+    /// an f64, then using those numbers to construct a completely
+    /// equivalent fraction.
     /// 
     /// _Nola's Note:
-    /// In testing on `x86_64-unknown-linux-gnu`, this works quite well and
-    /// preserves \[the aforementioned\] 15 points of decimal precision._
+    /// Only tested thus far on Little Endian hardware._
     pub fn from_f64(fp: f64) -> Self {
         if !fp.is_finite() {
             return match fp {
@@ -173,18 +167,52 @@ impl Fraction {
             return Fraction::ZERO
         }
 
-        let u_int_pow_of_ten = 10u64.pow(15);
-        let float_pow_of_ten = 1e15;
+        let two_pow_52: u64 = 0x10000000000000;
+        let float: f64 = fp;
+        let float_as_bits = float.to_bits().to_le();
+        let ieee_754_fraction: u64 = 0x000FFFFFFFFFFFFF;
+        let ieee_754_exponent: u64 = 0x7FF0000000000000;
+        let ieee_754_sign:     u64 = 0x8000000000000000;
+        let inv_two_pow_52: Fraction = Fraction::from(false, 0x1, two_pow_52);
 
-        let near_int_fp = (fp.abs() * float_pow_of_ten).round();
-        // Floating Point Integer Representation
-        let fp_int_rep = unsafe { near_int_fp.to_int_unchecked::<u64>() };
+        assert_eq!(ieee_754_exponent ^ ieee_754_fraction ^ ieee_754_sign, 0xFFFFFFFFFFFFFFFF);
 
-        Fraction { // no need to check for -0.0 due to guard clause
-            neg_sign: fp.is_sign_negative(),
-            numerator: (fp_int_rep / fp_int_rep.gcd(u_int_pow_of_ten)),
-            denominator: (u_int_pow_of_ten / fp_int_rep.gcd(u_int_pow_of_ten)),
-        }
+        let sign: bool = ieee_754_sign & float_as_bits == ieee_754_sign;
+        let fraction: u64 = ieee_754_fraction & float_as_bits;
+
+        let le_exponent = (float_as_bits & ieee_754_exponent).to_le() >> 52;
+        let halved_exponent_bytes =
+        le_exponent
+        .to_le_bytes()
+        .split_at(8 / 2)
+        .0
+        .iter()
+        .map(|&x| {x} )
+        .collect::<Vec<u8>>();
+        let signed_exponent: i16 = i16::from_le_bytes([
+            halved_exponent_bytes[0],
+            halved_exponent_bytes[1],
+        ]);
+        let final_exponent: i16 = match signed_exponent {
+            0x7FF => panic!("Infinite/NAN Value Requested"),
+            0 => -1022,
+            _ => signed_exponent - 1023
+        };
+        let two_power_biased_exp: u64 = 2u64.pow(final_exponent.abs().try_into().unwrap());
+        let frac_twopow: Fraction = match final_exponent.is_negative() {
+            true => Fraction::from(false, 1, two_power_biased_exp),
+            false => Fraction::from(false, two_power_biased_exp, 1),
+        };
+        let frac_fraction: Fraction = match signed_exponent {
+            0 => Fraction::from(false, fraction, 1),
+            _ => Fraction::from(false, two_pow_52 | fraction, 1),
+        };
+        let negator: Fraction = match sign {
+            true => Fraction::NEG_ONE,
+            false => Fraction::ONE
+        };
+        let final_frac: Fraction = negator * frac_twopow * frac_fraction * inv_two_pow_52;
+        final_frac.simplified()
     }
     
     /// Clamps infinite values to extreme, but absolute Fractions.
