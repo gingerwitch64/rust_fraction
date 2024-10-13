@@ -153,6 +153,13 @@ impl Fraction {
     /// an f64, then using those numbers to construct a completely
     /// equivalent fraction.
     /// 
+    /// # THIS WILL CRASH!!!
+    /// If the exponent of the floating point is too large, Rust will
+    /// state that a (u64) value has overflowed.
+    /// This is because the exponent can be anywhere from 2<sup>-1022</sup>
+    /// to 2<sup>1023</sup>, which far exceeds the u64's maximum value of
+    /// (2<sup>64</sup> - 1).
+    /// 
     /// _Nola's Note:
     /// Only tested thus far on Little Endian hardware._
     pub fn from_f64(fp: f64) -> Self {
