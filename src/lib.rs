@@ -67,7 +67,7 @@ impl Fraction {
             neg_sign,
             numerator,
             denominator,
-        }.simplifed()
+        }
     }
 
     /// Mutates a fraction's `neg_sign`.
@@ -105,7 +105,7 @@ impl Fraction {
     /// `Fraction::NEG_INFINITY` or `Fraction::INFINITY` based on
     /// their negation sign, and either variant of `0/0` will be
     /// simplified to `Fraction::UNDEFINED`.
-    pub fn simplifed(self) -> Self {
+    pub fn simplified(self) -> Self {
         if self.numerator == 0 && self.denominator != 0 {
             return Fraction::ZERO;
         }
@@ -200,22 +200,20 @@ impl Fraction {
     }
 }
 
-fn lcm(a: u64, b: u64) -> u64 { a * b / a.gcd(b) }
-
 impl ops::Add for Fraction {
     type Output = Self;
 
     fn add(self, rhs: Self) -> Self {
-        let lcm = lcm(self.denominator, rhs.denominator);
+        let lcm = self.denominator.gcd(rhs.denominator);
         let lhs_num = self.numerator * rhs.denominator;
         let rhs_num = rhs.numerator * self.denominator;
-        let neg_sign: bool = rhs.neg_sign ^ (lhs_num > rhs_num);
-        let numerator: u64 = match self.neg_sign ^ rhs.neg_sign {
+        let neg_sign = (lhs_num > rhs_num) ^ rhs.neg_sign;
+        let numerator = match self.neg_sign ^ rhs.neg_sign {
             true => lhs_num.abs_diff(rhs_num),
             false => lhs_num + rhs_num
         };
         let denominator: u64 = lcm;
-        Self::from(neg_sign, numerator, denominator).simplifed()
+        Self::from(neg_sign, numerator, denominator)
     }
 }
 
@@ -226,7 +224,7 @@ impl ops::Mul for Fraction {
         let neg_sign = self.neg_sign ^ rhs.neg_sign;
         let numerator = self.numerator * rhs.numerator;
         let denominator = self.denominator * rhs.denominator;
-        Self::from(neg_sign, numerator, denominator).simplifed()
+        Self::from(neg_sign, numerator, denominator)
     }
 }
 
@@ -237,7 +235,7 @@ impl ops::Div for Fraction {
         let neg_sign = self.neg_sign ^ rhs.neg_sign;
         let numerator = self.numerator * rhs.denominator;
         let denominator = self.denominator * rhs.numerator;
-        Self::from(neg_sign, numerator, denominator).simplifed()
+        Self::from(neg_sign, numerator, denominator)
     }
 }
 
@@ -265,10 +263,10 @@ mod tests {
         assert_eq!(Fraction::POS_MAX, Fraction::POS_MIN.reciprocal());
         assert_eq!(Fraction::NEG_MAX, Fraction::NEG_MIN.reciprocal());
         assert_eq!(Fraction::INFINITY, Fraction::NEG_INFINITY.negated());
-        assert_eq!(Fraction::ZERO, Fraction::from(false, 0, 1000).simplifed());
-        assert_eq!(Fraction::UNDEFINED, Fraction::from(true, 0, 0).simplifed());
+        assert_eq!(Fraction::ZERO, Fraction::from(false, 0, 1000).simplified());
+        assert_eq!(Fraction::UNDEFINED, Fraction::from(true, 0, 0).simplified());
         assert_eq!(
-            (Fraction::POS_MAX * Fraction::POS_MIN).simplifed(),
+            (Fraction::POS_MAX * Fraction::POS_MIN).simplified(),
             Fraction::ONE
         );
     }
@@ -285,5 +283,11 @@ mod tests {
     fn capping() {
         assert_eq!(Fraction::INFINITY.cap_to_finite(), Fraction::POS_MAX);
         assert_eq!(Fraction::POS_MAX.cap_to_finite(), Fraction::POS_MAX);
+    }
+
+    #[test]
+    fn operations() {
+        let _two = Fraction::ONE + Fraction::ONE;
+        //assert_eq!(Fraction::ONE + Fraction::from(false, 1, 2), Fraction::from(false, 3, 2));
     }
 }
