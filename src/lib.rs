@@ -204,16 +204,20 @@ impl ops::Add for Fraction {
     type Output = Self;
 
     fn add(self, rhs: Self) -> Self {
-        let lcm = self.denominator.gcd(rhs.denominator);
+        let lcm = self.denominator * rhs.denominator
+                / self.denominator.gcd(rhs.denominator);
         let lhs_num = self.numerator * rhs.denominator;
         let rhs_num = rhs.numerator * self.denominator;
-        let neg_sign = (lhs_num > rhs_num) ^ rhs.neg_sign;
+        let neg_sign = match self.neg_sign ^ rhs.neg_sign {
+            false => self.neg_sign,
+            true => (lhs_num > rhs_num) ^ rhs.neg_sign
+        };
         let numerator = match self.neg_sign ^ rhs.neg_sign {
             true => lhs_num.abs_diff(rhs_num),
             false => lhs_num + rhs_num
         };
         let denominator: u64 = lcm;
-        Self::from(neg_sign, numerator, denominator)
+        Self::from(neg_sign, numerator, denominator).simplified()
     }
 }
 
@@ -287,7 +291,9 @@ mod tests {
 
     #[test]
     fn operations() {
-        let _two = Fraction::ONE + Fraction::ONE;
-        //assert_eq!(Fraction::ONE + Fraction::from(false, 1, 2), Fraction::from(false, 3, 2));
+        assert_eq!(Fraction::ONE + Fraction::from(false, 1, 2), Fraction::from(false, 3, 2));
+        assert_eq!(Fraction::NEG_ONE + Fraction::from(false, 1, 2), Fraction::from(true, 1, 2));
+        assert_eq!(Fraction::ONE + Fraction::NEG_ONE, Fraction::ZERO);
+        assert_eq!(Fraction::NEG_ONE + Fraction::ONE, Fraction::ZERO);
     }
 }
