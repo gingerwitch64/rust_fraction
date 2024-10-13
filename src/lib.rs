@@ -1,6 +1,6 @@
-use std::ops;
 use core::fmt;
 use gcd::Gcd;
+use std::ops;
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Fraction {
@@ -12,54 +12,76 @@ pub struct Fraction {
 impl Fraction {
     /// Equivalent to `(+) u64::MAX / 1`.
     pub const POS_MAX: Fraction = Fraction {
-        neg_sign: false, numerator: u64::MAX, denominator: 1
+        neg_sign: false,
+        numerator: u64::MAX,
+        denominator: 1,
     };
     /// Equivalent to `(+) 1 / u64::MAX`.
     pub const POS_MIN: Fraction = Fraction {
-        neg_sign: false, numerator: 1, denominator: u64::MAX
+        neg_sign: false,
+        numerator: 1,
+        denominator: u64::MAX,
     };
     /// Equivalent to `(-) u64::MAX / 1`.
     pub const NEG_MAX: Fraction = Fraction {
-        neg_sign: true, numerator: u64::MAX, denominator: 1
+        neg_sign: true,
+        numerator: u64::MAX,
+        denominator: 1,
     };
     /// Equivalent to `(-) 1 / u64::MAX`
     /// or `-1 / u64::MAX`.
     pub const NEG_MIN: Fraction = Fraction {
-        neg_sign: true, numerator: 1, denominator: u64::MAX
+        neg_sign: true,
+        numerator: 1,
+        denominator: u64::MAX,
     };
     /// Defined as `(+) 0 / 0`.
     pub const UNDEFINED: Fraction = Fraction {
-        neg_sign: false, numerator: 0, denominator: 0
+        neg_sign: false,
+        numerator: 0,
+        denominator: 0,
     };
     /// Using the principle that as a denominator approaches 0 from the right,
     /// a rational approaches a value closer and closer to infinity:
-    /// 
+    ///
     /// `INFINITY` is defined as `(+) 1 / 0`.
     pub const INFINITY: Fraction = Fraction {
-        neg_sign: false, numerator: 1, denominator: 0
+        neg_sign: false,
+        numerator: 1,
+        denominator: 0,
     };
     /// Using the principle that as a denominator approaches 0 from the left,
     /// a rational approaches a value closer and closer to negative infinity:
-    /// 
+    ///
     /// `NEG_INFINITY` is defined as `(-) 1 / 0`.
     pub const NEG_INFINITY: Fraction = Fraction {
-        neg_sign: true, numerator: 1, denominator: 0
+        neg_sign: true,
+        numerator: 1,
+        denominator: 0,
     };
     /// Defined as `(+) 0 / 1`.
     pub const ZERO: Fraction = Fraction {
-        neg_sign: false, numerator: 0, denominator: 1
+        neg_sign: false,
+        numerator: 0,
+        denominator: 1,
     };
     /// Defined as `(+) 1 / 1`.
     pub const ONE: Fraction = Fraction {
-        neg_sign: false, numerator: 1, denominator: 1
+        neg_sign: false,
+        numerator: 1,
+        denominator: 1,
     };
     /// Defined as `(-) 1 / 1` or `-1 / 1`.
     pub const NEG_ONE: Fraction = Fraction {
-        neg_sign: true, numerator: 1, denominator: 1
+        neg_sign: true,
+        numerator: 1,
+        denominator: 1,
     };
 
     /// Returns `Fraction::ONE`.
-    pub fn new() -> Self { Fraction::ONE }
+    pub fn new() -> Self {
+        Fraction::ONE
+    }
 
     /// Returns a new fraction from a `bool` sign and two `u64`s.
     pub fn from(neg_sign: bool, numerator: u64, denominator: u64) -> Self {
@@ -71,15 +93,13 @@ impl Fraction {
     }
 
     /// Mutates a fraction's `neg_sign`.
-    pub fn negate(&mut self) { self.neg_sign = !self.neg_sign }
+    pub fn negate(&mut self) {
+        self.neg_sign = !self.neg_sign
+    }
 
     /// Returns a negated version of the fraction.
     pub fn negated(self) -> Self {
-        Fraction::from(
-            !self.neg_sign,
-            self.numerator,
-            self.denominator
-        )
+        Fraction::from(!self.neg_sign, self.numerator, self.denominator)
     }
 
     /// Returns a fraction with a swapped `numerator` and `denominator`.
@@ -88,10 +108,10 @@ impl Fraction {
     }
 
     /// NOT RECCOMENDED: USE `Fraction::simplified()` INSTEAD
-    /// 
+    ///
     /// This function does not support/will behave unusually
     /// with any fractions containing a value of `0`.
-    /// 
+    ///
     /// Mutates a fraction into a proportionate one.
     pub fn simplify(&mut self) {
         let common_divisor = self.numerator.gcd(self.denominator);
@@ -100,7 +120,7 @@ impl Fraction {
     }
 
     /// Returns a simplified version of the fraction.
-    /// 
+    ///
     /// Fractions with denominators of `0` will be simplified to
     /// `Fraction::NEG_INFINITY` or `Fraction::INFINITY` based on
     /// their negation sign, and either variant of `0/0` will be
@@ -112,8 +132,8 @@ impl Fraction {
         if self.numerator != 0 && self.denominator == 0 {
             return match self.neg_sign {
                 true => Fraction::NEG_INFINITY,
-                false => Fraction::INFINITY
-            }
+                false => Fraction::INFINITY,
+            };
         }
         if self.numerator == 0 && self.denominator == 0 {
             return Fraction::UNDEFINED;
@@ -121,15 +141,11 @@ impl Fraction {
         if self.numerator == self.denominator {
             return match self.neg_sign {
                 true => Fraction::NEG_ONE,
-                false => Fraction::ONE
-            }
+                false => Fraction::ONE,
+            };
         }
         let gcd = self.numerator.gcd(self.denominator);
-        Fraction::from(
-            self.neg_sign,
-            self.numerator / gcd,
-            self.denominator / gcd
-        )
+        Fraction::from(self.neg_sign, self.numerator / gcd, self.denominator / gcd)
     }
 
     /// Potentially lossily converts a fraction into a 64 bit floating point.
@@ -147,19 +163,19 @@ impl Fraction {
     }
 
     /// Losslessly converts a floating point to a `Fraction`.
-    /// 
+    ///
     /// This function uses the IEEE 754 double precision floating
     /// point standard to extract the sign, exponent and fraction from
     /// an f64, then using those numbers to construct a completely
     /// equivalent fraction.
-    /// 
+    ///
     /// # THIS WILL CRASH!!!
     /// If the exponent of the floating point is too large, Rust will
     /// state that a (u64) value has overflowed.
     /// This is because the exponent can be anywhere from 2<sup>-1022</sup>
     /// to 2<sup>1023</sup>, which far exceeds the u64's maximum value of
     /// (2<sup>64</sup> - 1).
-    /// 
+    ///
     /// _Nola's Note:
     /// Only tested thus far on Little Endian hardware._
     pub fn from_f64(fp: f64) -> Self {
@@ -167,11 +183,11 @@ impl Fraction {
             return match fp {
                 f64::INFINITY => Fraction::INFINITY,
                 f64::NEG_INFINITY => Fraction::NEG_INFINITY,
-                _ => Fraction::UNDEFINED
-            }
+                _ => Fraction::UNDEFINED,
+            };
         }
         if fp.abs() == 0.0f64 {
-            return Fraction::ZERO
+            return Fraction::ZERO;
         }
 
         let two_pow_52: u64 = 0x10000000000000;
@@ -179,31 +195,31 @@ impl Fraction {
         let float_as_bits = float.to_bits().to_le();
         let ieee_754_fraction: u64 = 0x000FFFFFFFFFFFFF;
         let ieee_754_exponent: u64 = 0x7FF0000000000000;
-        let ieee_754_sign:     u64 = 0x8000000000000000;
+        let ieee_754_sign: u64 = 0x8000000000000000;
         let inv_two_pow_52: Fraction = Fraction::from(false, 0x1, two_pow_52);
 
-        assert_eq!(ieee_754_exponent ^ ieee_754_fraction ^ ieee_754_sign, 0xFFFFFFFFFFFFFFFF);
+        assert_eq!(
+            ieee_754_exponent ^ ieee_754_fraction ^ ieee_754_sign,
+            0xFFFFFFFFFFFFFFFF
+        );
 
         let sign: bool = ieee_754_sign & float_as_bits == ieee_754_sign;
         let fraction: u64 = ieee_754_fraction & float_as_bits;
 
         let le_exponent = (float_as_bits & ieee_754_exponent).to_le() >> 52;
-        let halved_exponent_bytes =
-        le_exponent
-        .to_le_bytes()
-        .split_at(8 / 2)
-        .0
-        .iter()
-        .map(|&x| {x} )
-        .collect::<Vec<u8>>();
-        let signed_exponent: i16 = i16::from_le_bytes([
-            halved_exponent_bytes[0],
-            halved_exponent_bytes[1],
-        ]);
+        let halved_exponent_bytes = le_exponent
+            .to_le_bytes()
+            .split_at(8 / 2)
+            .0
+            .iter()
+            .map(|&x| x)
+            .collect::<Vec<u8>>();
+        let signed_exponent: i16 =
+            i16::from_le_bytes([halved_exponent_bytes[0], halved_exponent_bytes[1]]);
         let final_exponent: i16 = match signed_exponent {
             0x7FF => panic!("Infinite/NAN Value Requested"),
             0 => -1022,
-            _ => signed_exponent - 1023
+            _ => signed_exponent - 1023,
         };
         let two_power_biased_exp: u64 = 2u64.pow(final_exponent.abs().try_into().unwrap());
         let frac_twopow: Fraction = match final_exponent.is_negative() {
@@ -216,21 +232,21 @@ impl Fraction {
         };
         let negator: Fraction = match sign {
             true => Fraction::NEG_ONE,
-            false => Fraction::ONE
+            false => Fraction::ONE,
         };
         let final_frac: Fraction = negator * frac_twopow * frac_fraction * inv_two_pow_52;
         final_frac.simplified()
     }
-    
+
     /// Clamps infinite values to extreme, but absolute Fractions.
-    /// 
+    ///
     /// Finite values remain untouched.
     pub fn cap_to_finite(self) -> Self {
         match self {
             Fraction::INFINITY => Fraction::POS_MAX,
             Fraction::NEG_INFINITY => Fraction::NEG_MAX,
             Fraction::UNDEFINED => Fraction::ZERO,
-            _ => self
+            _ => self,
         }
     }
 }
@@ -239,17 +255,16 @@ impl ops::Add for Fraction {
     type Output = Self;
 
     fn add(self, rhs: Self) -> Self {
-        let lcm = self.denominator * rhs.denominator
-                / self.denominator.gcd(rhs.denominator);
+        let lcm = self.denominator * rhs.denominator / self.denominator.gcd(rhs.denominator);
         let lhs_num = self.numerator * rhs.denominator;
         let rhs_num = rhs.numerator * self.denominator;
         let neg_sign = match self.neg_sign ^ rhs.neg_sign {
             false => self.neg_sign,
-            true => (lhs_num > rhs_num) ^ rhs.neg_sign
+            true => (lhs_num > rhs_num) ^ rhs.neg_sign,
         };
         let numerator = match self.neg_sign ^ rhs.neg_sign {
             true => lhs_num.abs_diff(rhs_num),
-            false => lhs_num + rhs_num
+            false => lhs_num + rhs_num,
         };
         let denominator: u64 = lcm;
         Self::from(neg_sign, numerator, denominator).simplified()
@@ -313,7 +328,10 @@ mod tests {
     #[test]
     fn float_evaluations() {
         assert_eq!(Fraction::from_f64(f64::INFINITY), Fraction::INFINITY);
-        assert_eq!(Fraction::from_f64(f64::NEG_INFINITY), Fraction::NEG_INFINITY);
+        assert_eq!(
+            Fraction::from_f64(f64::NEG_INFINITY),
+            Fraction::NEG_INFINITY
+        );
         assert_eq!(Fraction::from_f64(f64::NAN), Fraction::UNDEFINED);
         assert_eq!(Fraction::from_f64(-0.0f64), Fraction::ZERO);
     }
@@ -326,8 +344,14 @@ mod tests {
 
     #[test]
     fn operations() {
-        assert_eq!(Fraction::ONE + Fraction::from(false, 1, 2), Fraction::from(false, 3, 2));
-        assert_eq!(Fraction::NEG_ONE + Fraction::from(false, 1, 2), Fraction::from(true, 1, 2));
+        assert_eq!(
+            Fraction::ONE + Fraction::from(false, 1, 2),
+            Fraction::from(false, 3, 2)
+        );
+        assert_eq!(
+            Fraction::NEG_ONE + Fraction::from(false, 1, 2),
+            Fraction::from(true, 1, 2)
+        );
         assert_eq!(Fraction::ONE + Fraction::NEG_ONE, Fraction::ZERO);
         assert_eq!(Fraction::NEG_ONE + Fraction::ONE, Fraction::ZERO);
     }
