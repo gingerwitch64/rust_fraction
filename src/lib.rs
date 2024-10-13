@@ -77,8 +77,10 @@ impl Fraction {
         numerator: 1,
         denominator: 1,
     };
+    /// A fractional representation of Pi (π), accurate to 15 digits
+    /// (when using Fraction::as_f64).
     pub const PI: Fraction = Fraction {
-        neg_sign: true,
+        neg_sign: false,
         numerator: 884279719003555,
         denominator: 281474976710656,
     };
@@ -283,7 +285,7 @@ impl ops::Mul for Fraction {
         let neg_sign = self.neg_sign ^ rhs.neg_sign;
         let numerator = self.numerator * rhs.numerator;
         let denominator = self.denominator * rhs.denominator;
-        Self::from(neg_sign, numerator, denominator)
+        Self::from(neg_sign, numerator, denominator).simplified()
     }
 }
 
@@ -294,7 +296,7 @@ impl ops::Div for Fraction {
         let neg_sign = self.neg_sign ^ rhs.neg_sign;
         let numerator = self.numerator * rhs.denominator;
         let denominator = self.denominator * rhs.numerator;
-        Self::from(neg_sign, numerator, denominator)
+        Self::from(neg_sign, numerator, denominator).simplified()
     }
 }
 
@@ -344,6 +346,18 @@ mod tests {
             (Fraction::from_f64(0.3333333333333333) + Fraction::from(true, 1, 3)).as_f64()
             < 1e10
         );
+    }
+
+    #[test]
+    #[should_panic]
+    fn extreme_fp_conversions() {
+        let float: f64 = 2.0;
+        let mut i: i32 = 0;
+        loop {
+            println!("Converting {}.powi({})...", float, i);
+            Fraction::from_f64(float.powi(i));
+            i += 1;
+        }
     }
 
     #[test]
