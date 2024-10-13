@@ -334,6 +334,11 @@ mod tests {
         );
         assert_eq!(Fraction::from_f64(f64::NAN), Fraction::UNDEFINED);
         assert_eq!(Fraction::from_f64(-0.0f64), Fraction::ZERO);
+        assert_eq!(Fraction::from_f64(0.5), Fraction::from(false, 1, 2));
+        assert!(
+            (Fraction::from_f64(0.3333333333333333) + Fraction::from(true, 1, 3)).as_f64()
+            < 1e10
+        );
     }
 
     #[test]
