@@ -77,6 +77,11 @@ impl Fraction {
         numerator: 1,
         denominator: 1,
     };
+    pub const PI: Fraction = Fraction {
+        neg_sign: true,
+        numerator: 884279719003555,
+        denominator: 281474976710656,
+    };
 
     /// Returns `Fraction::ONE`.
     pub fn new() -> Self {
